@@ -71,6 +71,35 @@ class TestCreate:
         assert resp.status_code == 409
         assert resp.json()["code"] == 409
 
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "http://127.0.0.1/admin",
+            "http://localhost/internal",
+            "http://192.168.1.1/router",
+            "http://10.0.0.8/secret",
+            "http://172.16.0.1/metadata",
+            "http://169.254.169.254/latest/meta-data",  # 云元数据服务
+            "http://[::1]/v6",
+        ],
+    )
+    def test_internal_url_rejected_as_ssrf(self, client, auth_headers, url):
+        """SSRF 防护：目标指向内网/环回地址必须 422"""
+        resp = client.post(
+            "/api/v1/links",
+            json={"origin_url": url},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 422
+
+    def test_public_ip_url_allowed(self, client, auth_headers):
+        resp = client.post(
+            "/api/v1/links",
+            json={"origin_url": "http://8.8.8.8/dns"},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 201
+
     def test_create_requires_auth(self, client):
         resp = client.post("/api/v1/links", json={"origin_url": "https://example.com/noauth"})
         assert resp.status_code == 401

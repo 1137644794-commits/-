@@ -119,7 +119,11 @@ class LinkService:
         expire_at = data.get("expire_at")
         if expire_at and now > expire_at:
             raise HTTPException(status_code=410, detail="短链接已过期")
-        return RedirectResponse(data["origin_url"], status_code=302)
+        response = RedirectResponse(data["origin_url"], status_code=302)
+        # 5 秒短缓存：边缘/浏览器吸收热点尖峰（AWS 短链实践），
+        # 同时把禁用/过期的生效延迟约束在 5 秒内，可控可接受
+        response.headers["Cache-Control"] = "public, max-age=5"
+        return response
 
     async def _rebuild_cache(self, short_code: str) -> None:
         """后台重建：独立会话 + 分布式锁，保证热点短链只有一个请求回源"""

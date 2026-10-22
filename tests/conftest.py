@@ -35,6 +35,7 @@ import app.dao.database as database_mod
 import app.dao.models as models_mod
 import app.services.link_service as link_service_mod
 import app.tasks.access_log as access_log_mod
+import app.tasks.cleanup as cleanup_mod
 from app.dao.database import Base
 from app.main import app
 
@@ -70,15 +71,17 @@ def _patch_runtime():
     old_engine = database_mod.engine
     old_factory = {
         database_mod: database_mod.async_session_factory,
-        # 下面两个模块是「按值导入」的，必须一并替换，否则 Celery 落库、
-        # 缓存重建会打进真实 MySQL
+        # 下面三个模块是「按值导入」的，必须一并替换，否则 Celery 落库、
+        # 缓存重建、过期清理会打进真实 MySQL
         access_log_mod: access_log_mod.async_session_factory,
         link_service_mod: link_service_mod.async_session_factory,
+        cleanup_mod: cleanup_mod.async_session_factory,
     }
     database_mod.engine = engine
     database_mod.async_session_factory = factory
     access_log_mod.async_session_factory = factory
     link_service_mod.async_session_factory = factory
+    cleanup_mod.async_session_factory = factory
 
     # 异步 Redis -> fakeredis（lifespan 里的 close_redis 会清掉 _pool，测试期间禁用）
     old_pool = redis_client_mod._pool

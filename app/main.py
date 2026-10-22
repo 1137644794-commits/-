@@ -90,4 +90,26 @@ app.include_router(redirect.router)
 
 @app.get("/healthz", tags=["系统"])
 async def healthz():
-    return {"status": "ok"}
+    """健康检查：真实探测 MySQL / Redis，任一组件故障返回 503（供 LB/容器探针使用）"""
+    from sqlalchemy import text as sa_text
+
+    components: dict[str, str] = {}
+    try:
+        async with database.async_session_factory() as session:
+            await session.execute(sa_text("SELECT 1"))
+        components["mysql"] = "ok"
+    except Exception:
+        logger.warning("健康检查：MySQL 探测失败", exc_info=True)
+        components["mysql"] = "down"
+    try:
+        await get_redis().ping()
+        components["redis"] = "ok"
+    except Exception:
+        logger.warning("健康检查：Redis 探测失败", exc_info=True)
+        components["redis"] = "down"
+
+    healthy = all(v == "ok" for v in components.values())
+    return JSONResponse(
+        status_code=200 if healthy else 503,
+        content={"status": "ok" if healthy else "degraded", "components": components},
+    )

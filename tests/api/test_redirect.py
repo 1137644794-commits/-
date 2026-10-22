@@ -21,6 +21,8 @@ class TestRedirect:
         resp = client.get(f"/s/{code}")
         assert resp.status_code == 302
         assert resp.headers["location"] == "https://example.com/target"
+        # 5 秒短缓存：边缘吸收热点尖峰（AWS 短链实践）
+        assert resp.headers["cache-control"] == "public, max-age=5"
 
     def test_expired_link_returns_410(self, client, auth_headers):
         # 从当前真实时间冻结（Token 保持有效），创建 60 秒过期的短链后

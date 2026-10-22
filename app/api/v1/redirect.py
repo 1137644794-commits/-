@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dao.database import get_db
+from app.middleware.rate_limit import check_redirect_rate
 from app.services.link_service import LinkService
 
 router = APIRouter(prefix="/s", tags=["短链跳转"])
@@ -15,5 +16,6 @@ async def redirect(
     short_code: str = Path(pattern=r"^[A-Za-z0-9_-]{1,16}$"),
     request: Request = None,
     db: AsyncSession = Depends(get_db),
+    _: None = Depends(check_redirect_rate),
 ):
     return await LinkService(db).redirect(short_code, request)

@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     # ============ 限流（创建短链接口） ============
     rate_limit_max: int = 10
     rate_limit_window: int = 60
+    # ============ 限流（跳转接口：防爬虫刷量/短码枚举） ============
+    redirect_rate_limit_max: int = 60
+    redirect_rate_limit_window: int = 60
+    # ============ 过期短链定时清理（惰性删除之外的主动治理） ============
+    cleanup_interval: int = 3600  # 清理任务执行间隔（秒）
 
     # ============ Celery ============
     celery_broker_url: str = "redis://127.0.0.1:6379/1"

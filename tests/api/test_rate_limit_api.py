@@ -55,3 +55,35 @@ def test_rate_limit_only_applies_to_create(client, auth_headers, monkeypatch):
     # 创建已达阈值，但列表接口仍然可用
     resp = client.get("/api/v1/links", headers=auth_headers)
     assert resp.status_code == 200
+
+
+class TestRedirectRateLimit:
+    """跳转接口限流：防爬虫刷量/短码枚举 —— 与创建限流独立计数"""
+
+    def test_redirect_over_threshold_returns_429(self, client, create_link, auth_headers, monkeypatch):
+        monkeypatch.setattr(settings, "redirect_rate_limit_max", 3)
+        code = create_link(auth_headers)
+
+        for _ in range(3):
+            assert client.get(f"/s/{code}").status_code == 302
+
+        resp = client.get(f"/s/{code}")
+        assert resp.status_code == 429
+        assert resp.headers.get("Retry-After") == str(settings.redirect_rate_limit_window)
+
+    def test_redirect_limit_independent_from_create(self, client, create_link, auth_headers, monkeypatch):
+        """跳转限流与创建限流互不影响（不同 scope 计数）"""
+        monkeypatch.setattr(settings, "redirect_rate_limit_max", 2)
+        code = create_link(auth_headers)
+
+        client.get(f"/s/{code}")
+        client.get(f"/s/{code}")
+        assert client.get(f"/s/{code}").status_code == 429
+
+        # 跳转已被限流，但创建接口不受影响
+        resp = client.post(
+            "/api/v1/links",
+            json={"origin_url": "https://example.com/still-ok"},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 201

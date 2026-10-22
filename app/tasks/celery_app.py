@@ -8,7 +8,7 @@ celery_app = Celery(
     "shortlink",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["app.tasks.access_log"],
+    include=["app.tasks.access_log", "app.tasks.cleanup"],
 )
 
 celery_app.conf.update(
@@ -23,6 +23,11 @@ celery_app.conf.update(
         "flush-access-logs": {
             "task": "app.tasks.access_log.flush_access_logs",
             "schedule": settings.log_flush_interval,
+        },
+        # 过期短链主动清理（读路径惰性删除之外的兜底治理）
+        "cleanup-expired-links": {
+            "task": "app.tasks.cleanup.cleanup_expired_links",
+            "schedule": settings.cleanup_interval,
         },
     },
 )
