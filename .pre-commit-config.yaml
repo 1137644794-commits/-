@@ -1,0 +1,8 @@
+# pre-commit 钩子：提交前自动 ruff 检查 + 格式化（测试设计文档 §6.3）
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.1
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format

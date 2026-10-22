@@ -1,0 +1,36 @@
+# Web 框架
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.29
+
+# 数据层：SQLAlchemy 2.0 异步 ORM + asyncmy 驱动
+sqlalchemy[asyncio]>=2.0.25,<2.1
+asyncmy>=0.2.10
+# MySQL 8 caching_sha2_password 认证需要
+cryptography>=42.0
+
+# 缓存 / 限流 / 消息队列
+redis>=5.0.3,<6.0
+celery[redis]>=5.4
+
+# 配置与参数校验
+pydantic>=2.6,<3.0
+pydantic-settings>=2.2
+
+# 认证：JWT 签发校验 + 密码哈希
+PyJWT>=2.8,<3.0
+bcrypt>=4.1,<5.0
+
+# 测试依赖（本地运行 pytest 需要，运行项目不需要）
+pytest>=8.3
+pytest-asyncio>=0.25
+httpx>=0.27
+# lua 附加包：滑动窗口限流的 Lua 脚本需要（fakeredis 解释执行）
+fakeredis[lua]>=2.26
+freezegun>=1.5
+pytest-cov>=5.0
+# 测试库：SQLite 异步驱动，替代 MySQL 跑本地测试
+aiosqlite>=0.20
+
+# 代码质量：lint/format + git 提交钩子
+ruff>=0.9
+pre-commit>=3.7
