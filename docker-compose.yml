@@ -10,7 +10,8 @@ services:
       MYSQL_USER: shortlink
       MYSQL_PASSWORD: shortlink123
     ports:
-      - "3306:3306"
+      # 宿主机 3306 可能被本地原生 MySQL 占用，故映射到 3307（容器内仍为 3306）
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:

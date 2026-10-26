@@ -71,6 +71,19 @@ class TestRedirectRateLimit:
         assert resp.status_code == 429
         assert resp.headers.get("Retry-After") == str(settings.redirect_rate_limit_window)
 
+    def test_redirect_window_slide_recovers(self, client, create_link, auth_headers, monkeypatch):
+        """跳转限流窗口滑动后恢复可访问"""
+        monkeypatch.setattr(settings, "redirect_rate_limit_max", 2)
+        code = create_link(auth_headers)
+
+        with freeze_time() as freezer:
+            assert client.get(f"/s/{code}").status_code == 302
+            assert client.get(f"/s/{code}").status_code == 302
+            assert client.get(f"/s/{code}").status_code == 429
+
+            freezer.tick(61)
+            assert client.get(f"/s/{code}").status_code == 302
+
     def test_redirect_limit_independent_from_create(self, client, create_link, auth_headers, monkeypatch):
         """跳转限流与创建限流互不影响（不同 scope 计数）"""
         monkeypatch.setattr(settings, "redirect_rate_limit_max", 2)

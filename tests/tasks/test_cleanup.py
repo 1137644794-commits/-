@@ -6,6 +6,7 @@
 from datetime import datetime, timedelta
 
 import pytest
+from freezegun import freeze_time
 from sqlalchemy import func, select
 
 from app.cache import link_cache
@@ -59,3 +60,21 @@ async def test_cleanup_noop_when_nothing_expired(db_session):
     assert cleanup_expired_links() == 0
     count = await db_session.scalar(select(func.count()).select_from(ShortLink))
     assert count == 0
+
+
+def test_redirect_turns_404_after_cleanup(client, create_link, auth_headers):
+    """集成验证：过期短链清理前返回 410，被清理任务删除后返回 404"""
+    with freeze_time() as freezer:
+        code = create_link(
+            auth_headers,
+            origin_url="https://example.com/dying",
+            expire_in_seconds=60,
+        )
+        freezer.tick(61)
+        # 清理前：惰性判断 -> 410
+        assert client.get(f"/s/{code}").status_code == 410
+
+        assert cleanup_expired_links() == 1
+
+        # 清理后：数据与缓存均已删除 -> 404
+        assert client.get(f"/s/{code}").status_code == 404

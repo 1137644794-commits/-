@@ -81,6 +81,12 @@ class TestCreate:
             "http://172.16.0.1/metadata",
             "http://169.254.169.254/latest/meta-data",  # 云元数据服务
             "http://[::1]/v6",
+            # IP 缩写/变形绕过尝试：pydantic 会规范化成标准内网 IP 后被拦截
+            "http://127.1/x",
+            "http://0x7f.0.0.1/x",  # 十六进制
+            "http://2130706433/x",  # 十进制整数
+            "http://0177.0.0.1/x",  # 八进制
+            "http://127.0.0.1./x",  # 结尾点号
         ],
     )
     def test_internal_url_rejected_as_ssrf(self, client, auth_headers, url):
